@@ -22,28 +22,30 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 public class JsRequestController {
     private final JsRequestAsyncService jsRequestAsyncService;
 
-    @PostMapping(value="/scriptRun", consumes = "text/plain")
-    public ResponseEntity<?> returnJsResponse(@RequestBody String payload){
+    @PostMapping(value = "/scriptRun", consumes = "text/plain")
+    public ResponseEntity<?> returnJsResponse(@RequestBody String payload) {
 
-        if(payload == null || payload.isEmpty()){
+        if (payload == null || payload.isEmpty()) {
             return new ResponseEntity<>("No script was found", HttpStatus.BAD_REQUEST);
         }
         String scriptId = UUID.randomUUID().toString();
         ScriptModel model = new ScriptModel(scriptId, payload, ScriptStatus.RUNNING);
 
-            jsRequestAsyncService.processAsyncScript(model);
+        jsRequestAsyncService.processAsyncScript(model);
 
-            return new ResponseEntity<>(new ResponseHateoas("Script has been accepted")
-                    .add(linkTo(methodOn(JsRequestController.class).getScriptStatusById(scriptId)).withSelfRel()), HttpStatus.ACCEPTED);
+        return new ResponseEntity<>(new ResponseHateoas("Script has been accepted")
+                .add(linkTo(methodOn(JsRequestController.class).getScriptStatusById(scriptId)).withSelfRel()), HttpStatus.ACCEPTED);
     }
 
     @GetMapping(value = "/allScriptInfo")
     public ResponseEntity<List<ScriptModel>> getAllScriptHistory() {
         List<ScriptModel> scriptList = jsRequestAsyncService.getAllModelStorage();
         scriptList.forEach(x -> {
-          if(x.getScriptStatus().equals(ScriptStatus.RUNNING)) {
-              x.add(linkTo(methodOn(JsRequestController.class).shutDownThread(x.getScriptId())).withSelfRel());
-          } else { x.removeLinks(); }
+            if (x.getScriptStatus().equals(ScriptStatus.RUNNING)) {
+                x.add(linkTo(methodOn(JsRequestController.class).shutDownThread(x.getScriptId())).withSelfRel());
+            } else {
+                x.removeLinks();
+            }
         });
         return new ResponseEntity<>(jsRequestAsyncService.getAllModelStorage(), HttpStatus.OK);
     }
@@ -51,16 +53,19 @@ public class JsRequestController {
     @GetMapping(value = "/script/{scriptId}")
     public ResponseEntity<ScriptModel> getScriptStatusById(@PathVariable("scriptId") String scriptId) {
         ScriptModel scriptModel = jsRequestAsyncService.getScriptStatusById(scriptId);
-       if (scriptModel.getScriptStatus().equals(ScriptStatus.RUNNING)){
-           return new ResponseEntity<>(scriptModel
-                   .add(linkTo(methodOn(JsRequestController.class).shutDownThread(scriptId)).withSelfRel()),
-                   HttpStatus.OK);
-       }
-        return new ResponseEntity<>(scriptModel.removeLinks(), HttpStatus.OK);
+        if (scriptModel == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        } else if (scriptModel.getScriptStatus().equals(ScriptStatus.RUNNING)) {
+            return new ResponseEntity<>(scriptModel
+                    .add(linkTo(methodOn(JsRequestController.class).shutDownThread(scriptId)).withRel("shut down thread")),
+                    HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(scriptModel.removeLinks(), HttpStatus.OK);
+        }
     }
 
     @PatchMapping(value = "/shutDownThread/{scriptId}")
-    public ResponseEntity<?> shutDownThread(@PathVariable("scriptId") String scriptId){
+    public ResponseEntity<?> shutDownThread(@PathVariable("scriptId") String scriptId) {
         jsRequestAsyncService.forceToCloseContext(scriptId);
         return new ResponseEntity<>(HttpStatus.OK);
     }

@@ -1,9 +1,7 @@
 package com.scriptjs.run.scriptjsrun.model;
 
 import com.scriptjs.run.scriptjsrun.model.status.ScriptStatus;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.hateoas.RepresentationModel;
@@ -13,6 +11,7 @@ import java.util.List;
 
 @Data
 @Document
+@Setter
 @NoArgsConstructor
 public class ScriptModel extends RepresentationModel<ScriptModel> {
     @Id

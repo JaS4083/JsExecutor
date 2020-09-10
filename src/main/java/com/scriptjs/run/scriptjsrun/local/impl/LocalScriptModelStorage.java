@@ -5,6 +5,8 @@ import com.scriptjs.run.scriptjsrun.model.ScriptModel;
 import com.scriptjs.run.scriptjsrun.model.status.ScriptStatus;
 import com.scriptjs.run.scriptjsrun.repository.ScriptModelRepository;
 import lombok.Data;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.graalvm.polyglot.Context;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -18,6 +20,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Data
+@Slf4j
+@Setter
 @Component
 public class LocalScriptModelStorage implements LocalStorage {
     private final Map<String, ScriptModel> modelMap = new ConcurrentHashMap<>();
@@ -31,6 +35,8 @@ public class LocalScriptModelStorage implements LocalStorage {
 
     @PostConstruct
     public void init(){
+        log.info("init() is retrieving all the data from DB!");
+
         modelMap.putAll(scriptModelRepository.findAll().stream().collect(Collectors.toMap(ScriptModel::getScriptId, x -> x)));
     }
 
@@ -58,6 +64,7 @@ public class LocalScriptModelStorage implements LocalStorage {
 
     @PreDestroy
     public void preDestroy(){
+        log.info("preDestroy() is saving all the data to DB!");
         scriptModelRepository.deleteAll();
         scriptModelRepository.saveAll(modelMap.values());
     }
